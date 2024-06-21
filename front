@@ -13,11 +13,11 @@ interface ChatRequest {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '', // Make sure this is set
+  apiKey: process.env.OPENAI_API_KEY || '', 
 });
 
-const ASSISTANT_ID = 'asst_yfDd5bAoT20HJv5WepJSr2VC'; // Your assistant ID
-const VECTOR_STORE_ID = 'vs_qBlCyWxoAp5KlBSeLGUaEg0Y'; // Your vector store ID
+const ASSISTANT_ID = 'asst_yfDd5bAoT20HJv5WepJSr2VC'; 
+const VECTOR_STORE_ID = 'vs_qBlCyWxoAp5KlBSeLGUaEg0Y'; 
 
 @Controller('assistant')
 export class AssistantController {
@@ -34,14 +34,14 @@ export class AssistantController {
       if (!threadId) {
         const newThread = await this.assistantService.threads.createThread();
         threadId = newThread.id;
-        this.currentThreadId = threadId; // Store the new thread ID
+        this.currentThreadId = threadId; 
       }
 
       // Add user message to thread (including file IDs if needed)
       await this.assistantService.threads.messages.create(threadId, {
         role: 'user',
         content: input.message,
-        // ... (Add file IDs to attachments if needed)
+        
       });
 
       return AssistantResponse(
@@ -55,7 +55,7 @@ export class AssistantController {
           );
 
           let runResult = await forwardStream(runStream);
-          this.currentRunId = runResult.id; // Store the run ID
+          this.currentRunId = runResult.id; 
 
           while (
             runResult?.status === 'requires_action' &&
@@ -67,7 +67,7 @@ export class AssistantController {
 
                 switch (toolCall.function.name) {
                   case 'SearchVectorStore':
-                    // Call OpenAI to search the vector store
+                    
                     const searchResults = await openai.beta.vectorStores.search(
                       VECTOR_STORE_ID,
                       parameters.query,
@@ -76,7 +76,7 @@ export class AssistantController {
                       tool_call_id: toolCall.id,
                       output: JSON.stringify(searchResults.results),
                     };
-                  // Add cases for other tools
+                 
                   default:
                     throw new Error(
                       `Unknown tool call function: ${toolCall.function.name}`,
@@ -88,7 +88,7 @@ export class AssistantController {
             runResult = await forwardStream(
               this.assistantService.threads.runs.submitToolOutputsStream(
                 threadId,
-                runResult.id, // Use the stored run ID
+                
                 { tool_outputs: toolOutputs },
               ),
             );
@@ -101,7 +101,7 @@ export class AssistantController {
     }
   }
 
-  // Route to handle file retrieval
+  
   @Get('files/retrieve/:fileId')
   async retrieveFile(@Param('fileId') fileId: string) {
     try {
@@ -115,9 +115,9 @@ export class AssistantController {
 
   @Post('upload')
   @UseInterceptors(
-    FilesInterceptor('files', 10, { // Allow up to 10 files
+    FilesInterceptor('files', 10, { 
       storage: diskStorage({
-        destination: './uploads', // Temporary storage location
+        destination: './uploads', 
         filename: (req, file, cb) => {
           // Generate a unique filename
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -131,14 +131,14 @@ export class AssistantController {
       const uploadedFiles = await Promise.all(
         files.map(async (file) => {
           const openaiFile = await openai.files.create({
-            file: file.path, // Path to the temporarily stored file
+            file: file.path,
             purpose: 'assistants',
           });
           return openaiFile;
         }),
       );
 
-      // ... (Optional: Delete the temporary files from './uploads')
+      
 
       return { files: uploadedFiles };
     } catch (err) {
